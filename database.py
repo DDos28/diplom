@@ -57,9 +57,13 @@ def get_available_slots(doctor_id, date):
     try:
         cursor.execute("SELECT schedule FROM doctors WHERE id = ?", (doctor_id,))
         schedule_json = cursor.fetchone()[0]
-        schedule = json.loads(schedule_json)
-        available_slots = schedule.get(date, []) # Возвращает пустой список, если нет записи для этой даты
-        return available_slots
+        try:  # Обработка исключений при парсинге JSON
+            schedule = json.loads(schedule_json)
+            available_slots = schedule.get(date, [])
+            return available_slots
+        except json.JSONDecodeError:
+            print(f"Error decoding JSON for doctor {doctor_id}: {schedule_json}")
+            return []
     except Exception as e:
         print(f"Error getting available slots: {e}")
         return []

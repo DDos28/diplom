@@ -118,7 +118,7 @@ async def date_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return CHOOSING_DATE_TIME
     else:
         await query.edit_message_text(text="К сожалению, на эту дату нет свободных слотов.")
-        return ConversationHandler.END
+        return CHOOSING_DATE_TIME
 
 async def time_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -151,7 +151,7 @@ if __name__ == '__main__':
         states={
             CHOOSING_DOCTOR: [CallbackQueryHandler(doctor_selected, pattern='^doctor_')],
             CHOOSING_SERVICE: [CallbackQueryHandler(service_selected, pattern='^service_')],
-            CHOOSING_DATE_TIME: [CallbackQueryHandler(choose_datetime, pattern='^service_[0-9]+$'),
+            CHOOSING_DATE_TIME: [CallbackQueryHandler(choose_datetime, pattern='^service_'),
                                  # Добавлен этот обработчик
                                  CallbackQueryHandler(date_selected, pattern='^date_'),
                                  CallbackQueryHandler(time_selected, pattern='^time_')],
