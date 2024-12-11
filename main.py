@@ -10,7 +10,7 @@ CHOOSING_SERVICE = 2
 CHOOSING_DATE_TIME = 3
 CONFIRMATION = 4
 
-BOT_TOKEN = '***'
+BOT_TOKEN = '7037708319:AAFaxoOelXsZx_U5h7XzSwJJpa78tgNpilE'
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -18,14 +18,22 @@ logging.basicConfig(
 )
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [
-        [InlineKeyboardButton("Список врачей", callback_data='doctors')],
-        [InlineKeyboardButton("Список услуг", callback_data='services')],
-        [InlineKeyboardButton("Записаться на прием", callback_data='appointment')],
-        [InlineKeyboardButton("Отзывы", callback_data='reviews')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    reply_markup = create_main_menu_keyboard()
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Выберите действие:", reply_markup=reply_markup)
+
+button_doctors = InlineKeyboardButton("Список врачей", callback_data='doctors')
+button_services = InlineKeyboardButton("Список услуг", callback_data='services')
+button_appointment = InlineKeyboardButton("Записаться на прием", callback_data='appointment')
+button_reviews = InlineKeyboardButton("Отзывы", callback_data='reviews')
+
+def create_main_menu_keyboard():
+    keyboard = [
+        [button_doctors],
+        [button_services],
+        [button_appointment],
+        [button_reviews]
+    ]
+    return InlineKeyboardMarkup(keyboard)
 
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -65,14 +73,18 @@ async def doctor_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     doctor_id = int(query.data.split('_')[1])
     context.user_data['doctor_id'] = doctor_id
-    await query.edit_message_text(text=f"Вы выбрали врача: {query.data.split('_')[0]}. Выберите услугу.")
-    services = database.get_services()
-    keyboard = []
-    for service in services:
-      keyboard.append([InlineKeyboardButton(service[1], callback_data=f'service_{service[0]}')])
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="Выберите услугу:", reply_markup=reply_markup)
-    return CHOOSING_SERVICE
+    doctor = database.get_doctor_by_id(doctor_id)
+    if doctor:
+        doctor_name = doctor['name']
+        await query.edit_message_text(text=f"Вы выбрали врача: {doctor_name}. Выберите услугу.")
+        services = database.get_services()
+        keyboard = [[InlineKeyboardButton(service[1], callback_data=f'service_{service[0]}')] for service in services]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Выберите услугу:", reply_markup=reply_markup)
+        return CHOOSING_SERVICE
+    else:
+        await query.edit_message_text(text="Ошибка: Врач не найден.")
+        return ConversationHandler.END
 
 
 async def service_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -80,8 +92,13 @@ async def service_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     service_id = int(query.data.split('_')[1])
     context.user_data['service_id'] = service_id
-    await query.edit_message_text(text=f"Вы выбрали услугу: {query.data.split('_')[0]}. Выберите дату и время.")
-    return CHOOSING_DATE_TIME
+    service_name = database.get_service_name(service_id)
+    if service_name:
+        await query.edit_message_text(text=f"Вы выбрали услугу: {service_name}. Выберите дату и время.")
+        return CHOOSING_DATE_TIME
+    else:
+        await query.edit_message_text(text=f"Ошибка: Услуга с ID {service_id} не найдена.")
+        return ConversationHandler.END
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text('Запись отменена.', reply_markup=ReplyKeyboardRemove())

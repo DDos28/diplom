@@ -69,3 +69,35 @@ def get_available_slots(doctor_id, date):
         return []
     finally:
         conn.close()
+
+def get_doctor_by_id(doctor_id):
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT * FROM doctors WHERE id = ?", (doctor_id,)) #Извлечение всех столбцов
+        doctor = cursor.fetchone()
+        if doctor:
+            return dict(zip([description[0] for description in cursor.description], doctor)) #Преобразование в словарь
+        else:
+            return None
+    except Exception as e:
+        print(f"Error getting doctor by ID: {e}")
+        return None
+    finally:
+        conn.close()
+
+def get_service_name(service_id):
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT name FROM services WHERE id = ?", (service_id,))
+        service_name = cursor.fetchone()
+        if service_name:
+            return service_name[0]  # Возвращаем только имя услуги
+        else:
+            return None
+    except Exception as e:
+        print(f"Error getting service name: {e}")
+        return None
+    finally:
+        conn.close()
