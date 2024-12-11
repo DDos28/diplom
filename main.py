@@ -10,7 +10,7 @@ CHOOSING_SERVICE = 2
 CHOOSING_DATE_TIME = 3
 CONFIRMATION = 4
 
-BOT_TOKEN = '7037708319:AAFaxoOelXsZx_U5h7XzSwJJpa78tgNpilE'
+BOT_TOKEN = '***'
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -49,8 +49,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         for review in reviews:
             text += f"- {review[0]} ({review[1]} звезд)\n"
         await query.edit_message_text(text=text)
-    elif query.data == 'appointment':
-        await query.edit_message_text(text="Функция записи на прием пока что находится в разработке.") # временная обработка
+
 
 async def choose_doctor(update: Update, context: ContextTypes.DEFAULT_TYPE):
     doctors = database.get_doctors()
@@ -82,7 +81,6 @@ async def service_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
     service_id = int(query.data.split('_')[1])
     context.user_data['service_id'] = service_id
     await query.edit_message_text(text=f"Вы выбрали услугу: {query.data.split('_')[0]}. Выберите дату и время.")
-    #  Убираем return ConversationHandler.END
     return CHOOSING_DATE_TIME
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -95,7 +93,6 @@ async def choose_datetime(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("Сегодня", callback_data=f'date_{today.isoformat()}')],
         [InlineKeyboardButton("Завтра", callback_data=f'date_{tomorrow.isoformat()}')]
-        # Здесь можно добавить больше дней
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Выберите дату:", reply_markup=reply_markup)
@@ -152,7 +149,6 @@ if __name__ == '__main__':
             CHOOSING_DOCTOR: [CallbackQueryHandler(doctor_selected, pattern='^doctor_')],
             CHOOSING_SERVICE: [CallbackQueryHandler(service_selected, pattern='^service_')],
             CHOOSING_DATE_TIME: [CallbackQueryHandler(choose_datetime, pattern='^service_'),
-                                 # Добавлен этот обработчик
                                  CallbackQueryHandler(date_selected, pattern='^date_'),
                                  CallbackQueryHandler(time_selected, pattern='^time_')],
             CONFIRMATION: [CallbackQueryHandler(confirmation, pattern='^confirm$')]

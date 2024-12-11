@@ -36,8 +36,8 @@ def book_appointment(user_id, doctor_id, service_id, datetime):
     cursor = conn.cursor()
     try:
         cursor.execute("SELECT schedule FROM doctors WHERE id = ?", (doctor_id,))
-        schedule = cursor.fetchone()[0] # предположим, что расписание - это строка
-        available_slots = json.loads(schedule) # парсим json строку
+        schedule = cursor.fetchone()[0]
+        available_slots = json.loads(schedule)
         if datetime in available_slots:
           cursor.execute("INSERT INTO appointments (user_id, doctor_id, service_id, datetime) VALUES (?, ?, ?, ?)",
                          (user_id, doctor_id, service_id, datetime))
@@ -57,7 +57,7 @@ def get_available_slots(doctor_id, date):
     try:
         cursor.execute("SELECT schedule FROM doctors WHERE id = ?", (doctor_id,))
         schedule_json = cursor.fetchone()[0]
-        try:  # Обработка исключений при парсинге JSON
+        try:
             schedule = json.loads(schedule_json)
             available_slots = schedule.get(date, [])
             return available_slots
