@@ -10,7 +10,7 @@ CHOOSING_SERVICE = 2
 CHOOSING_DATE_TIME = 3
 CONFIRMATION = 4
 
-BOT_TOKEN = '7037708319:AAFaxoOelXsZx_U5h7XzSwJJpa78tgNpilE'
+BOT_TOKEN = ''
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
