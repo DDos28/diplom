@@ -99,7 +99,7 @@ async def service_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
     service_name = database.get_service_name(service_id)
     if service_name:
         await query.edit_message_text(text=f"Вы выбрали услугу: {service_name}. Выберите дату и время.")
-        return await choose_datetime(update, context)  # Переход к выбору даты и времени
+        return await choose_datetime(update, context)
     else:
         await query.edit_message_text(text=f"Ошибка: Услуга с ID {service_id} не найдена.")
         return ConversationHandler.END
