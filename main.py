@@ -1,7 +1,7 @@
 import logging
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, CallbackQueryHandler, ConversationHandler
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
 import database
 import datetime
 
@@ -10,23 +10,26 @@ CHOOSING_SERVICE = 2
 CHOOSING_DATE_TIME = 3
 CONFIRMATION = 4
 
-BOT_TOKEN = ''
+BOT_TOKEN = '7037708319:AAFaxoOelXsZx_U5h7XzSwJJpa78tgNpilE'
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
 
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = create_main_menu_keyboard()
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="Выберите действие:", reply_markup=reply_markup)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Выберите действие:",
+                                   reply_markup=reply_markup)
 
-button_doctors = InlineKeyboardButton("Список врачей", callback_data='doctors')
-button_services = InlineKeyboardButton("Список услуг", callback_data='services')
-button_appointment = InlineKeyboardButton("Записаться на прием", callback_data='appointment')
-button_reviews = InlineKeyboardButton("Отзывы", callback_data='reviews')
 
 def create_main_menu_keyboard():
+    button_doctors = InlineKeyboardButton("Список врачей", callback_data='doctors')
+    button_services = InlineKeyboardButton("Список услуг", callback_data='services')
+    button_appointment = InlineKeyboardButton("Записаться на прием", callback_data='appointment')
+    button_reviews = InlineKeyboardButton("Отзывы", callback_data='reviews')
+
     keyboard = [
         [button_doctors],
         [button_services],
@@ -68,6 +71,7 @@ async def choose_doctor(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Выберите врача:", reply_markup=reply_markup)
     return CHOOSING_DOCTOR
 
+
 async def doctor_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -80,12 +84,12 @@ async def doctor_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
         services = database.get_services()
         keyboard = [[InlineKeyboardButton(service[1], callback_data=f'service_{service[0]}')] for service in services]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="Выберите услугу:", reply_markup=reply_markup)
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Выберите услугу:",
+                                       reply_markup=reply_markup)
         return CHOOSING_SERVICE
     else:
         await query.edit_message_text(text="Ошибка: Врач не найден.")
         return ConversationHandler.END
-
 
 async def service_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -95,7 +99,7 @@ async def service_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
     service_name = database.get_service_name(service_id)
     if service_name:
         await query.edit_message_text(text=f"Вы выбрали услугу: {service_name}. Выберите дату и время.")
-        return CHOOSING_DATE_TIME
+        return await choose_datetime(update, context)  # Переход к выбору даты и времени
     else:
         await query.edit_message_text(text=f"Ошибка: Услуга с ID {service_id} не найдена.")
         return ConversationHandler.END
@@ -115,18 +119,14 @@ async def choose_datetime(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Выберите дату:", reply_markup=reply_markup)
     return CHOOSING_DATE_TIME
 
-
 async def date_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     date_str = query.data.split('_')[1]
-    date = datetime.date.fromisoformat(date_str)
     context.user_data['date'] = date_str
     available_slots = database.get_available_slots(context.user_data['doctor_id'], date_str)
     if available_slots:
-        keyboard = []
-        for slot in available_slots:
-            keyboard.append([InlineKeyboardButton(slot, callback_data=f'time_{slot}')])
+        keyboard = [[InlineKeyboardButton(slot, callback_data=f'time_{slot}')] for slot in available_slots]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await context.bot.send_message(chat_id=update.effective_chat.id, text="Выберите время:", reply_markup=reply_markup)
         return CHOOSING_DATE_TIME
@@ -139,9 +139,11 @@ async def time_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     time = query.data.split('_')[1]
     context.user_data['time'] = time
-    datetime_str = f"{context.user_data['date']} {time}"
     await query.edit_message_text(text=f"Вы выбрали время: {time}. Подтвердить запись?")
-    keyboard = [[InlineKeyboardButton("Подтвердить", callback_data='confirm'), InlineKeyboardButton("Отмена", callback_data='cancel')]]
+    keyboard = [
+        [InlineKeyboardButton("Подтвердить", callback_data='confirm'),
+         InlineKeyboardButton("Отмена", callback_data='cancel')]
+    ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Подтвердить запись?", reply_markup=reply_markup)
     return CONFIRMATION
@@ -150,7 +152,12 @@ async def confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     if query.data == 'confirm':
-        success = database.book_appointment(update.effective_user.id, context.user_data['doctor_id'], context.user_data['service_id'], f"{context.user_data['date']} {context.user_data['time']}")
+        success = database.book_appointment(
+            update.effective_user.id,
+            context.user_data['doctor_id'],
+            context.user_data['service_id'],
+            f"{context.user_data['date']} {context.user_data['time']}"
+        )
         if success:
             await query.edit_message_text(text="Запись успешно создана!")
         else:
@@ -159,14 +166,12 @@ async def confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 if __name__ == '__main__':
     application = ApplicationBuilder().token(BOT_TOKEN).build()
-
     conv_handler = ConversationHandler(
         entry_points=[CallbackQueryHandler(choose_doctor, pattern='^appointment$')],
         states={
             CHOOSING_DOCTOR: [CallbackQueryHandler(doctor_selected, pattern='^doctor_')],
             CHOOSING_SERVICE: [CallbackQueryHandler(service_selected, pattern='^service_')],
-            CHOOSING_DATE_TIME: [CallbackQueryHandler(choose_datetime, pattern='^service_'),
-                                 CallbackQueryHandler(date_selected, pattern='^date_'),
+            CHOOSING_DATE_TIME: [CallbackQueryHandler(date_selected, pattern='^date_'),
                                  CallbackQueryHandler(time_selected, pattern='^time_')],
             CONFIRMATION: [CallbackQueryHandler(confirmation, pattern='^confirm$')]
         },
