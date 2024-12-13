@@ -74,10 +74,10 @@ def get_doctor_by_id(doctor_id):
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT * FROM doctors WHERE id = ?", (doctor_id,)) #Извлечение всех столбцов
+        cursor.execute("SELECT * FROM doctors WHERE id = ?", (doctor_id,))
         doctor = cursor.fetchone()
         if doctor:
-            return dict(zip([description[0] for description in cursor.description], doctor)) #Преобразование в словарь
+            return dict(zip([description[0] for description in cursor.description], doctor))
         else:
             return None
     except Exception as e:
